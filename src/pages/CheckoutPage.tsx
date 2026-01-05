@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CreditCard, Truck, Store, Check } from 'lucide-react';
+import { ArrowLeft, CreditCard, Truck, Store, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCartStore } from '@/stores/cartStore';
-import { useAdminStore } from '@/stores/adminStore';
+import { useCreateOrder } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, total, clearCart } = useCartStore();
-  const { addOrder } = useAdminStore();
+  const createOrder = useCreateOrder();
   const cartTotal = total();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,36 +45,39 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      await createOrder.mutateAsync({
+        customer_name: formData.name,
+        customer_email: formData.email || undefined,
+        customer_phone: formData.phone,
+        items: items.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        subtotal: cartTotal,
+        tax: tax,
+        delivery_fee: deliveryFee,
+        total: grandTotal,
+        payment_method: paymentMethod,
+        order_type: orderType,
+        delivery_address: orderType === 'delivery' ? {
+          street: formData.street,
+          city: formData.city,
+          zipCode: formData.zipCode,
+          notes: formData.notes,
+        } : undefined,
+        notes: formData.notes || undefined,
+      });
 
-    // Create order
-    addOrder({
-      customerName: formData.name,
-      customerEmail: formData.email,
-      customerPhone: formData.phone,
-      items: items.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      total: grandTotal,
-      paymentMethod,
-      status: 'new',
-      isDelivery: orderType === 'delivery',
-      address: orderType === 'delivery' ? {
-        street: formData.street,
-        city: formData.city,
-        zipCode: formData.zipCode,
-        notes: formData.notes,
-      } : undefined,
-    });
-
-    clearCart();
-    setIsSubmitting(false);
-    
-    toast.success('Order placed successfully!');
-    navigate('/order-confirmation');
+      clearCart();
+      toast.success('Order placed successfully!');
+      navigate('/order-confirmation');
+    } catch (error: any) {
+      toast.error('Failed to place order', { description: error.message });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (items.length === 0) {
@@ -280,7 +283,14 @@ export default function CheckoutPage() {
                   className="w-full"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Processing...' : `Place Order • $${grandTotal.toFixed(2)}`}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Place Order • $${grandTotal.toFixed(2)}`
+                  )}
                 </Button>
               </div>
             </motion.form>
@@ -351,7 +361,14 @@ export default function CheckoutPage() {
                   disabled={isSubmitting}
                   onClick={handleSubmit}
                 >
-                  {isSubmitting ? 'Processing...' : 'Place Order'}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Place Order'
+                  )}
                 </Button>
               </div>
             </motion.div>

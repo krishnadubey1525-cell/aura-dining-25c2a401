@@ -15,7 +15,13 @@ import OrderConfirmationPage from "@/pages/OrderConfirmationPage";
 import AdminLoginPage from "@/pages/admin/AdminLoginPage";
 import AdminLayout from "@/pages/admin/AdminLayout";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
+import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
+import AdminMenuPage from "@/pages/admin/AdminMenuPage";
+import AdminReservationsPage from "@/pages/admin/AdminReservationsPage";
+import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
+import AdminAnalyticsPage from "@/pages/admin/AdminAnalyticsPage";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
 
@@ -33,33 +39,36 @@ function CustomerLayout({ children }: { children: React.ReactNode }) {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner position="top-right" />
-      <BrowserRouter>
-        <Routes>
-          {/* Customer routes */}
-          <Route path="/" element={<CustomerLayout><HomePage /></CustomerLayout>} />
-          <Route path="/menu" element={<CustomerLayout><MenuPage /></CustomerLayout>} />
-          <Route path="/reservations" element={<CustomerLayout><ReservationsPage /></CustomerLayout>} />
-          <Route path="/about" element={<CustomerLayout><AboutPage /></CustomerLayout>} />
-          <Route path="/checkout" element={<CustomerLayout><CheckoutPage /></CustomerLayout>} />
-          <Route path="/order-confirmation" element={<CustomerLayout><OrderConfirmationPage /></CustomerLayout>} />
-          
-          {/* Admin routes */}
-          <Route path="/admin" element={<AdminLoginPage />} />
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="orders" element={<AdminDashboardPage />} />
-            <Route path="menu" element={<AdminDashboardPage />} />
-            <Route path="reservations" element={<AdminDashboardPage />} />
-            <Route path="settings" element={<AdminDashboardPage />} />
-          </Route>
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner position="top-right" />
+        <BrowserRouter>
+          <Routes>
+            {/* Customer routes */}
+            <Route path="/" element={<CustomerLayout><HomePage /></CustomerLayout>} />
+            <Route path="/menu" element={<CustomerLayout><MenuPage /></CustomerLayout>} />
+            <Route path="/reservations" element={<CustomerLayout><ReservationsPage /></CustomerLayout>} />
+            <Route path="/about" element={<CustomerLayout><AboutPage /></CustomerLayout>} />
+            <Route path="/checkout" element={<CustomerLayout><CheckoutPage /></CustomerLayout>} />
+            <Route path="/order-confirmation" element={<CustomerLayout><OrderConfirmationPage /></CustomerLayout>} />
+            
+            {/* Admin routes */}
+            <Route path="/admin" element={<AdminLoginPage />} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="dashboard" element={<AdminDashboardPage />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="menu" element={<AdminMenuPage />} />
+              <Route path="reservations" element={<AdminReservationsPage />} />
+              <Route path="analytics" element={<AdminAnalyticsPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
+            </Route>
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

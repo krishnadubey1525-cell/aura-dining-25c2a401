@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Users, Phone, Mail, User, Check, Sparkles } from 'lucide-react';
+import { Calendar, Clock, Users, Phone, Mail, User, Check, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { useAdminStore } from '@/stores/adminStore';
+import { useCreateReservation } from '@/hooks/useReservations';
 
 export default function ReservationsPage() {
-  const { addReservation } = useAdminStore();
+  const createReservation = useCreateReservation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   
@@ -27,23 +27,24 @@ export default function ReservationsPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      await createReservation.mutateAsync({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email || undefined,
+        date: formData.date,
+        time: formData.time,
+        party_size: parseInt(formData.partySize),
+        notes: formData.notes || undefined,
+      });
 
-    // Add reservation to store
-    addReservation({
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-      dateTime: new Date(`${formData.date}T${formData.time}`),
-      partySize: parseInt(formData.partySize),
-      status: 'pending',
-      notes: formData.notes,
-    });
-
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast.success('Reservation submitted successfully!');
+      setIsSubmitted(true);
+      toast.success('Reservation submitted successfully!');
+    } catch (error: any) {
+      toast.error('Failed to submit reservation', { description: error.message });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -243,11 +244,7 @@ export default function ReservationsPage() {
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
-                  <motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                    className="w-5 h-5 border-2 border-secondary-foreground/30 border-t-secondary-foreground rounded-full"
-                  />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   Submitting...
                 </span>
               ) : (

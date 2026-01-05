@@ -1,51 +1,83 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, Mail } from 'lucide-react';
+import { Mail, Lock, LogIn, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAdminStore } from '@/stores/adminStore';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export default function AdminLoginPage() {
-  const { isAuthenticated, login } = useAdminStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const { signIn, signUp, isAdmin, user, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
 
-  if (isAuthenticated) {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
+  useEffect(() => {
+    if (user && isAdmin) {
+      navigate('/admin/dashboard');
+    }
+  }, [user, isAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    
-    const success = login(email, password);
-    setIsLoading(false);
-    
-    if (success) {
-      toast.success('Welcome back!');
-    } else {
-      toast.error('Invalid credentials. Try admin@restaurant.com / admin123');
+
+    try {
+      if (isSignUp) {
+        const { error } = await signUp(email, password);
+        if (error) {
+          if (error.message.includes('already registered')) {
+            toast.error('This email is already registered', { description: 'Please sign in instead' });
+          } else {
+            toast.error('Sign up failed', { description: error.message });
+          }
+        } else {
+          toast.success('Account created!', { 
+            description: 'Please contact an admin to grant you access to the dashboard.' 
+          });
+        }
+      } else {
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast.error('Login failed', { description: error.message });
+        }
+      }
+    } catch (err) {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-background">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-display font-bold text-gradient-gold mb-2">Lumière</h1>
-          <p className="text-muted-foreground">Admin Dashboard</p>
+          <h1 className="text-4xl font-display font-bold text-gradient-gold mb-2">
+            Lumière
+          </h1>
+          <p className="text-muted-foreground">
+            {isSignUp ? 'Create your admin account' : 'Admin Dashboard Login'}
+          </p>
         </div>
 
-        <div className="bg-card rounded-2xl border border-border/50 p-8">
+        <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -54,14 +86,15 @@ export default function AdminLoginPage() {
                 <Input
                   id="email"
                   type="email"
+                  placeholder="admin@restaurant.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@restaurant.com"
-                  className="pl-10 h-12"
+                  className="pl-10"
                   required
                 />
               </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
@@ -69,23 +102,55 @@ export default function AdminLoginPage() {
                 <Input
                   id="password"
                   type="password"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="pl-10 h-12"
+                  className="pl-10"
                   required
+                  minLength={6}
                 />
               </div>
             </div>
-            <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
+
+            <Button 
+              type="submit" 
+              className="w-full" 
+              variant="gold"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : isSignUp ? (
+                <>
+                  <UserPlus className="h-5 w-5 mr-2" />
+                  Create Account
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-5 w-5 mr-2" />
+                  Sign In
+                </>
+              )}
             </Button>
           </form>
-          <p className="text-xs text-muted-foreground text-center mt-6">
-            Demo: admin@restaurant.com / admin123
-          </p>
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm text-secondary hover:underline"
+            >
+              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            </button>
+          </div>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          Only authorized administrators can access this dashboard.
+          <br />
+          Contact the owner for access.
+        </p>
       </motion.div>
-    </main>
+    </div>
   );
 }
