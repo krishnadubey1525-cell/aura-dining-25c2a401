@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/cart/CartDrawer";
+import ChatBot from "@/components/chat/ChatBot";
 import HomePage from "@/pages/HomePage";
 import MenuPage from "@/pages/MenuPage";
 import ReservationsPage from "@/pages/ReservationsPage";
@@ -33,6 +34,7 @@ function CustomerLayout({ children }: { children: React.ReactNode }) {
       {children}
       <Footer />
       <CartDrawer />
+      <ChatBot />
     </>
   );
 }
