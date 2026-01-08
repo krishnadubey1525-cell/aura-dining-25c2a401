@@ -6,6 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const SUPABASE_URL = "https://eezsdibvqiczzfduahts.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlenNkaWJ2cWljenpmZHVhaHRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2MTk2MTUsImV4cCI6MjA4MzE5NTYxNX0.sagX7g9oXWUR4LPCBAE6539v7IpegeO6lPv87tndhtE";
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -26,20 +29,32 @@ export default function ChatBot() {
     }
   }, [messages]);
 
+  const bookReservation = async (reservationData: Record<string, unknown>): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("chat", {
+        body: { action: "book_reservation", reservationData }
+      });
+
+      if (error || data?.error) {
+        console.error("Reservation booking failed:", error || data?.error);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error("Reservation error:", e);
+      return false;
+    }
+  };
+
   const extractAndProcessReservation = async (content: string): Promise<string> => {
     const reservationMatch = content.match(/\[RESERVATION_DATA\](.*?)\[\/RESERVATION_DATA\]/s);
     
     if (reservationMatch) {
       try {
         const reservationData = JSON.parse(reservationMatch[1]);
-        
-        // Call the edge function to book the reservation
-        const { data, error } = await supabase.functions.invoke("chat", {
-          body: { action: "book_reservation", reservationData }
-        });
+        const success = await bookReservation(reservationData);
 
-        if (error || data?.error) {
-          console.error("Reservation booking failed:", error || data?.error);
+        if (!success) {
           toast.error("Failed to book reservation. Please try again.");
           return content.replace(/\[RESERVATION_DATA\].*?\[\/RESERVATION_DATA\]/s, 
             "\n\n⚠️ I apologize, but there was an issue booking your reservation. Please try again or call us directly.");
@@ -66,16 +81,27 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      const response = await supabase.functions.invoke("chat", {
-        body: { messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })) }
+      // Use fetch directly for streaming support
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          "apikey": SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ 
+          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })) 
+        })
       });
 
-      if (response.error) {
-        throw new Error(response.error.message);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to get response");
       }
 
-      // Handle streaming response
-      const reader = response.data.getReader();
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
       const decoder = new TextDecoder();
       let assistantMessage = "";
 
