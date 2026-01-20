@@ -21,7 +21,6 @@ import AdminMenuPage from "@/pages/admin/AdminMenuPage";
 import AdminReservationsPage from "@/pages/admin/AdminReservationsPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 import AdminAnalyticsPage from "@/pages/admin/AdminAnalyticsPage";
-import AdminContactSubmissionsPage from "@/pages/admin/AdminContactSubmissionsPage";
 import ContactFormPage from "@/pages/ContactFormPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -65,7 +64,6 @@ const App = () => (
               <Route path="orders" element={<AdminOrdersPage />} />
               <Route path="menu" element={<AdminMenuPage />} />
               <Route path="reservations" element={<AdminReservationsPage />} />
-              <Route path="contact" element={<AdminContactSubmissionsPage />} />
               <Route path="analytics" element={<AdminAnalyticsPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>

@@ -2,7 +2,7 @@ import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, ShoppingBag, UtensilsCrossed, Calendar, 
-  LogOut, Settings, Bell, Menu, X, Sun, Moon, Volume2, VolumeX, BarChart3, MessageSquare 
+  LogOut, Settings, Bell, Menu, X, Sun, Moon, Volume2, VolumeX, BarChart3 
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,6 @@ const navItems = [
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/menu', label: 'Menu', icon: UtensilsCrossed },
   { href: '/admin/reservations', label: 'Reservations', icon: Calendar },
-  { href: '/admin/contact', label: 'Contact', icon: MessageSquare },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
