@@ -1,5 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
+// Reservation validation schema
+const reservationSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100, "Name too long"),
+  phone: z.string().trim().min(10, "Phone must be at least 10 digits").max(20, "Phone too long"),
+  email: z.string().email("Invalid email").max(255).optional().or(z.literal("")),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD format"),
+  time: z.string().regex(/^\d{2}:\d{2}$/, "Time must be HH:MM format"),
+  party_size: z.number().int().min(1, "Party size must be at least 1").max(20, "Maximum party size is 20"),
+  notes: z.string().max(500, "Notes too long").optional().or(z.literal(""))
+});
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,17 +82,41 @@ serve(async (req) => {
 
     // Handle reservation booking action
     if (action === "book_reservation") {
-      const { name, phone, email, date, time, party_size, notes } = reservationData;
+      // Validate reservation data
+      const validationResult = reservationSchema.safeParse(reservationData);
+      
+      if (!validationResult.success) {
+        console.error("Reservation validation error:", validationResult.error.flatten());
+        return new Response(JSON.stringify({ 
+          error: "Invalid reservation data. Please check your inputs and try again." 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      const validated = validationResult.data;
       
       const { data, error } = await supabase
         .from("reservations")
-        .insert([{ name, phone, email, date, time, party_size, notes, status: "pending" }])
+        .insert([{ 
+          name: validated.name, 
+          phone: validated.phone, 
+          email: validated.email || null, 
+          date: validated.date, 
+          time: validated.time, 
+          party_size: validated.party_size, 
+          notes: validated.notes || null, 
+          status: "pending" 
+        }])
         .select()
         .single();
       
       if (error) {
         console.error("Reservation error:", error);
-        return new Response(JSON.stringify({ error: "Failed to create reservation", details: error.message }), {
+        return new Response(JSON.stringify({ 
+          error: "Unable to process reservation. Please try again or contact us directly." 
+        }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
